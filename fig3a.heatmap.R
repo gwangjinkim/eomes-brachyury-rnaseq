@@ -1,33 +1,7 @@
+###########################################
+# Plotting of Heatmap for Figure 3a
+
 rm(list=ls()) 
-
-####################################################################
-# binquire() and inquire()
-####################################################################
-
-binquire <- function(packagename) {
-  pckgname <- toString(substitute(packagename))
-  eval(substitute(
-    if (!require(pckgname)) {
-      source("https://bioconductor.org/biocLite.R")
-      biocLite(pckgname)
-      require(pckgname)
-    }
-  ))
-}
-
-inquire <- function(packagename) {
-  pckgname <- toString(substitute(packagename))
-  eval(substitute(
-    if (!require(pckgname)) {
-      install.packages(pckgname)
-      require(pckgname)
-    }
-  ))
-}
-
-########################################################################################
-# to do: let the cluster order by their mean value!
-########################################################################################
 
 ####################################################################
 # helper functions for printing count tables
@@ -135,33 +109,12 @@ list.order.by.col.mean.diffs <-
               decreasing = decreasing)]
   }
 
-# # ####################################################################
-# # kmeans Cluster obj sort
-# # ####################################################################
-# 
-# sort.kmeans.cluster <- function(kClust) {
-#   res.kClust <- kClust
-#   attributes(res.kClust) <- attributes(kClust)
-#   attributes(res.kClust$cluster) <- attributes(kClust$cluster)
-#   res.kClust$centers <- kClust$centers[order(kClust$centers[, denominator], 
-#                                              kClust$centers[, numerator], 
-#                                              decreasing = c(T, T)), ]
-#   from.vec <- rownames(res.kClust$centers)
-#   to.vec   <- 1:length(from.vec)
-#   res.kClust$cluster <- translate.vec(kClust$cluster, from.vec, to.vec)
-#   res.kClust$withinss <- kClust$withinss[as.numeric(from.vec)]
-#   res.kClust$size     <- kClust$size[as.numeric(from.vec)]
-#   names(res.kClust$cluster) <- names(kClust$cluster)
-#   rownames(res.kClust$centers) <- rownames(kClust$centers)
-#   res.kClust
-# }
-
 ####################################################################
 # required packages
 ####################################################################
 
-binquire(DESeq2)     # DE analysis
-inquire(xlsx)        # xlsx printing
+require(DESeq2)      # DE analysis
+require(xlsx)        # xlsx printing
 
 
 ####################################################################
@@ -171,7 +124,7 @@ inquire(xlsx)        # xlsx printing
 outdirpath <- "/home/josephus/Dropbox/amit_scripts/clustering_non_union/plots"
 indirpath  <- "~/count/raw-subread/cleaned/"
 metapath   <- "~/Dropbox/amit_scripts/alaAmit/meta.txt"
-e2spath <- "~/Dropbox/amit_scripts/alaHerrmann/ensembl2symbol/ensembleID2geneSymbol.txt"
+e2spath    <- "~/Dropbox/amit_scripts/alaHerrmann/ensembl2symbol/ensembleID2geneSymbol.txt"
 
 ####################################################################
 # meta information
@@ -187,7 +140,7 @@ core_name   <- paste0(numerator, "-vs-", denominator, collapse = '')
 ####################################################################
 # give each condition a color and add to meta.df
 ####################################################################
-# 
+
 col.condition <- c("grey", "blue", "orange", "red")
 names(col.condition) <- unique(meta.df$condition) # in order given
 meta.df$color <- col.condition[as.vector(meta.df$condition)]
@@ -201,9 +154,6 @@ e2s.df <- read.table(e2spath, sep = '\t',
                      row.names = 1, 
                      stringsAsFactors = FALSE)
 colnames(e2s.df) <- "symbol"
-
-
-
 
 #####################################################################
 # ensure existence of output paths
@@ -238,20 +188,12 @@ sizeFactors(DESeq2.norm)
 DESeq2.disp <- estimateDispersions(DESeq2.norm)
 plotDispEsts(DESeq2.disp)
 
-
 count.table.norm <- counts(DESeq2.norm, normalized = TRUE)
-
-head(counts(DESeq2.norm))
-head(counts(DESeq2.obj))
-
-# the normalized table
-head(counts(DESeq2.norm, normalized = TRUE))
-head(counts(DESeq2.disp, normalized = TRUE))
 
 #####################################################################
 # set tresholds
 #####################################################################
-alpha <- 0.05 # the padj threshold for significance
+alpha       <- 0.05 # the padj threshold for significance
 log2FClimit <- 1
 
 # #####################################################################
@@ -259,9 +201,13 @@ log2FClimit <- 1
 # #####################################################################
 # 
 # dds <- DESeq(DESeq2.obj)
-# res <- results(dds, alpha=alpha, pAdjustMethod = "BH", contrast = c("condition", "dKO", "WT"))
+# res <- results(dds, 
+#                alpha=alpha, 
+#                pAdjustMethod = "BH", 
+#                contrast = c("condition", "dKO", "WT"))
 # res <- na.omit(res)
-# # exakt gleich wie wald test
+# # it is exactly the same like 'wald test'
+
 #####################################################################
 # wald test
 #####################################################################
@@ -270,14 +216,9 @@ wald.test <- nbinomWaldTest(DESeq2.disp)
 res.DESeq2.dKOvsWT <- results(wald.test, alpha=alpha, 
                               pAdjustMethod = "BH", 
                               contrast = c("condition", "dKO", "WT"))
-# # it is better to not make a union
-# res.DESeq2.BraKOvsWT <- results(wald.test, alpha=alpha, pAdjustMethod = "BH", contrast = c("condition", "BraKO", "WT"))
-# res.DESeq2.EoKOvsWT <- results(wald.test, alpha=alpha, pAdjustMethod = "BH", contrast = c("condition", "EoKO", "WT"))
 
 # remove NA rows
 res.DESeq2.dKOvsWT <- na.omit(res.DESeq2.dKOvsWT)
-# res.DESeq2.BraKOvsWT <- na.omit(res.DESeq2.BraKOvsWT)
-# res.DESeq2.EoKOvsWT <- na.omit(res.DESeq2.EoKOvsWT)
 
 head(res.DESeq2.dKOvsWT, 100)
 head(res, 100)
@@ -290,19 +231,13 @@ all(dim(res.DESeq2.dKOvsWT) == dim(res)) # TRUE
 #####################################################################
 
 dKOvsWT.kept <- rownames(res.DESeq2.dKOvsWT)[res.DESeq2.dKOvsWT$padj <= alpha & !is.na(res.DESeq2.dKOvsWT$padj)]
-
-# BraKOvsWT.kept <- rownames(res.DESeq2.BraKOvsWT)[res.DESeq2.BraKOvsWT$padj <= alpha & !is.na(res.DESeq2.BraKOvsWT$padj)]
-# EoKOvsWT.kept <- rownames(res.DESeq2.EoKOvsWT)[res.DESeq2.EoKOvsWT$padj <= alpha & !is.na(res.DESeq2.EoKOvsWT$padj)]
-
-# names.union <- unique(c(dKOvsWT.kept, BraKOvsWT.kept, EoKOvsWT.kept) )
-# names.union
-
 names.union <- c(dKOvsWT.kept)
 
 #####################################################################
 # select gene names based on union
 # alpha <- 0.05
 # gene.kept <- rownames(res.DESeq2)[res.DESeq2$padj <= alpha & !is.na(res.DESeq2$padj)]
+
 gene.kept <- names.union
 
 
@@ -344,17 +279,17 @@ head(scaledata)
 #####################################################################
 # load
 #####################################################################
-binquire(edgeR)
-inquire(SummarizedExperiment)
+require(edgeR)
+require(SummarizedExperiment)
 
-inquire(ggplot2)               # for graphics
-inquire(reshape)               # for graphics
+require(ggplot2)               # for graphics
+require(reshape)               # for graphics
 
-inquire(gplots)                # for heatmap
-inquire(RColorBrewer)          # for heatmap
+require(gplots)                # for heatmap
+require(RColorBrewer)          # for heatmap
 
-binquire(pheatmap)             # for heatmap
-inquire(xlsx)                  # for heatmap output
+require(pheatmap)             # for heatmap
+require(xlsx)                  # for heatmap output
 
 #####################################################################
 # set k

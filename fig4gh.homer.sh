@@ -74,7 +74,6 @@ findMotifsGenome.pl ${dko_atac_peaks} mm10 ${dko_atac_out} -size 200 -p 6 && \
 findMotifsGenome.pl ${wt_h3k27ac_peaks} mm10 ${wt_h3k27ac_out} -size 200 -p 6 && \
 findMotifsGenome.pl ${dko_h3k27ac_peaks} mm10 ${dko_h3k27ac_out} -size 200 -p 6 && \
 
-
 findMotifsGenome.pl ${wt_allup_atac_peaks} mm10 ${wt_allup_out} -size 200 -p 6 && \
 findMotifsGenome.pl ${wt_alldown_atac_peaks} mm10 ${wt_alldown_out} -size 200 -p 6 && \
 findMotifsGenome.pl ${dko_up_atac_chip_peaks} mm10 ${dko_up_atac_chip_out} -size 200 -p 6 && \
@@ -87,7 +86,6 @@ findMotifsGenome.pl ${hermann_tchip_peaks} mm10 ${hermann_tchip_out} -size 200 -
 
 rsync -av /media/josephus/Elements/ChIPresults/ /media/josephus/24AA554AAA551A1E/ChIPresults/
 
-
 findMotifsGenome.pl ${all_atac_chip} mm10 ${all_atac_chip_out} -size 200 -p 6 && \
 findMotifsGenome.pl ${up_atac_chip} mm10 ${up_atac_chip_out} -size 200 -p 6 && \
 findMotifsGenome.pl ${down_atac_chip} mm10 ${down_atac_chip_out} -size 200 -p 6 && \
@@ -95,9 +93,6 @@ findMotifsGenome.pl ${up_atac_rnaseq} mm10 ${up_atac_rnaseq_out} -size 200 -p 6 
 findMotifsGenome.pl ${down_atac_rnaseq} mm10 ${down_atac_rnaseq_out} -size 200 -p 6
 
 rsync -av /media/josephus/Elements/ChIPresults/ /media/josephus/24AA554AAA551A1E/ChIPresults/
-
-
-
 
 ## 181025
 
@@ -122,67 +117,8 @@ length(unique(gr.eobrDOWN))
 # [1] 6527
 
 
-
-mergeBedUnique <- function(bed1, bed2) {
-
-}
-
-
 require(GenomicRanges)
 
-g1 <- GRanges(data.frame(seqnames="Chr1",
-                         strand="+",
-                         start=c(2,2,2,4,5,6),
-                         end=c(24,25,25,25,25,21),
-                         m1=c("a","a","a","b","b","b"),
-                         m2=c("A","B","A","B","A","B"),
-                         m3=c(1,2,3,4,5,6), stringsAsFactors=F))
-g2 <- GRanges(data.frame(seqnames="Chr1",
-                         strand="+",
-                         start=c(2,3,2,5,7,6,7),
-                         end=c(24,25,25,25,25,21,25),
-                         m1=c("a","a","a","b","b","b","b"),
-                         m2=c("A","B","A","B","A","B","A"),
-                         m3=7:1, stringsAsFactors=F))
-
-g1 <- GRanges(seqnames="Chr1", strand="+", ranges=IRanges(start=c(2,2,2,4,5,6), end=c(24,25,25,25,25,21)))
-g2 <- GRanges(seqnames="Chr1", strand="+", ranges=IRanges(start=c(2,3,2,5,7,6, 7), end=c(24,25,25,25,25,21, 25)))
-
-g <- c(g1, g2)
-
-# merge and overtake from the first
-# merge and follow a fule function for each of the meta columns
-
-# merge and just merge column content using a string ";"
-
-g1r <- unique(g1)
-g2r <- unique(g2)
-
-# unique doesn't care of meta, only of the position information
-# there might be a function which squishes the position but aggregates the meta information?
-
-hit.idxs <- findOverlaps(g1r, g2r)
-
-# g1r.starts <- start(g1r)
-# g1r.ends <- end(g1r)
-# g1r.chrs <- seqnames(g1r)
-# g2r.starts <- start(g2r)
-# g2r.ends <- end(g2r)
-# g2r.chrs <- seqnames(g2r)
-# 
-# pos1ToPos2 <- lapply(g1r.starts, function(x) grep(x, g2r.starts))
-# repeats <- sapply(pos1ToPos2, length)
-# repeated.g1r.starts <- Map(rep, g1r.starts, repeats)
-# unlist(pos1ToPos2)
-# unlist(repeated.g1r.starts)
-# 
-# matchTable <- function(vec1, vec2) {
-#   # Return match table of two vectors
-#   idx2s <- lapply(vec1, function(x) grep(x, vec2))
-#   idx1s <- Map(rep, 1:length(vec1), sapply(idx2s, length))
-#   data.frame(queryHits=unlist(idx1s), subjectHits=unlist(idx2s), stringsAsFactors=F)
-# }
-# 
 
 #########################
 # find exact position matches - independent of meta data

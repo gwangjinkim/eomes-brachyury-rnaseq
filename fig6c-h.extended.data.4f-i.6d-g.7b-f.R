@@ -1,12 +1,11 @@
-################################################################################
-
-
+#######################################################################################
+# Plotting Barplots with counts as dots for Figure 6c-h, Extended Data 4f-i, 6d-g, 7b-f
+#######################################################################################
 
 
 ##########################################
 # for scale normed averaged with dots
 ##########################################
-
 
 require(xlsx2dfs)
 if (!require(rlang)) {
@@ -118,10 +117,6 @@ scale.raw.counts.with.SD.with.orig.values <- function(cnts.DE.sig.fpath, meta.fp
   }
   res
 }
-
-
-
-
 
 ############################################
 # SEM
@@ -239,7 +234,6 @@ scale.centering.with.wt.dko.SD.SEM <- function(cnts.DE.sig.fpath, meta.fpath, ou
   res
 }
 
-
 scale.raw.counts.with.SD.SEM.with.orig.values <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "") {
   cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[["all.names.srt"]]
   meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
@@ -286,9 +280,9 @@ scale.raw.counts.with.SD.SEM.with.orig.values <- function(cnts.DE.sig.fpath, met
 }
 
 ###########################################
-# plotting functions (they work!)
+# plotting functions
 ###########################################
-# require(ggbeeswarm)
+
 plot.scaled.avg <- function(scale.svg.xlsx.fpath, 
                             genes, 
                             error.type="sd", 
@@ -407,20 +401,12 @@ create.scaled.values.sem.dots.dir.or.fpath <- function(dir.or.fpath, genes=NULL,
 
 
 
-
-
-
-
-
-
-
-## collect all excel also in an extra folder
+## collect all excel output files in one folder
 out.revision.dir <- "/media/josephus/Elements/DEanalysis/rev2019-fig6-scaled-counts"
 
 ############################################
 # genes lists
 ############################################
-
 
 # mesp1 and msgn1 rescue
 mm.mes.genes = c("Cited1", "Myo16", "Prrx2", "Nkx2-5", "Pdgfra", "Isl1", "Gata4", "Pkdcc")
@@ -447,7 +433,6 @@ eo.epi.ne.genes = c("Pou5f1", "Nanog", "Wnt8a", "Pou3f1", "Sox1", "Sox2", "Sox3"
 eo.mes.de.genes = c("Foxc2", "Myh7", "Myocd", "Mesp2", "Foxa2", "Cer1", "Hhex")
 eo.epi.genes = c("Nanog", "Pou5f1", "L1td1", "Wnt8a", "Nkx1-2", "Efnb1", "Epha2", "Zic3")
 
-
 # mesp1 msg1 rescue
 mp.me.suppl.genes = c("Myl6", "Myh6", "Myh7", "Tcf7l2", "Tnni1", "Lmo1", "Cxcr4", "Cer1", "Dkk1")
 mg.me.genes = c("Osr1", "Six2", "Hmga2", "Isl1", "Eya1", "Tbx6", "Twist2", "Gata5")
@@ -458,12 +443,6 @@ mx.me.genes = c("Gsc", "Lhx1", "Prrx1", "Hhex", "Sox17", "Gata6", "Cer1")
 
 # six2 rescue
 sx.me.genes = c("Six2", "Pax2", "Pax5", "Lrp2", "Podxl", "Sall1", "Wnt8b", "Tcf7l1")
-
-
-
-# eo.epi.ne.genes = c("Nanog", "Pou5f1", "L1td1", "Wnt8a", "Nkx1-2", "Efnb1", "Epha2", "Zic3")
-
-
 
 paths <- c("/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/meta/meta-rev2019-dko-vs-wt_mesp1-mgsn1-six2.txt",
 "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/meta/meta-rev2019-dko-vs-wt_mesp1-mgsn1-six2.txt",
@@ -535,26 +514,26 @@ name.parts <- c("mes",
                 "me", 
                 "me")
 
-> fpaths
- [1] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mesp1-mgsn1-six2_dKO-vs-WT_190812144822-0.05-1.xlsx"
- [2] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mesp1-mgsn1-six2_dKO-vs-WT_190812144822-0.05-1.xlsx"
- [3] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mesp1-mgsn1-six2_dKO-vs-WT_190812144822-0.05-1.xlsx"
- [4] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mixl1-foxa2-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mixl1-foxa2-six2_dKO-vs-WT_190812184340-0.05-1.xlsx"
- [5] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mixl1-foxa2-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mixl1-foxa2-six2_dKO-vs-WT_190812184340-0.05-1.xlsx"
- [6] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mixl1-foxa2-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mixl1-foxa2-six2_dKO-vs-WT_190812184340-0.05-1.xlsx"
- [7] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5Ad-br5AD-brGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5Ad-br5AD-brGFPAD_k2-vs-wtn_190507114338-0.05-1.xlsx"            
- [8] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5Ad-br5AD-brGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5Ad-br5AD-brGFPAD_k2-vs-wtn_190507114338-0.05-1.xlsx"            
- [9] "/media/josephus/Elements/DEanalysis/heatmaps-181031/br-181031/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-br-hm_k2-vs-wtn_181031160803-0.05-1.xlsx"                                      
-[10] "/media/josephus/Elements/DEanalysis/heatmaps-181031/br-181031/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-br-hm_k2-vs-wtn_181031160803-0.05-1.xlsx"                                      
-[11] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5AdD-eoGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5AdD-eoGFPAD_k2-vs-wtn_190507113057-0.05-1.xlsx"                      
-[12] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5AdD-eoGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5AdD-eoGFPAD_k2-vs-wtn_190507113057-0.05-1.xlsx"                      
-[13] "/media/josephus/Elements/DEanalysis/rev2019-jitters-190807-eo/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-jitters-190807-eo_k2-vs-wtn_190807162157-0.05-1.xlsx"                  
-[14] "/media/josephus/Elements/DEanalysis/rev2019-jitters-190807-eo/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-jitters-190807-eo_k2-vs-wtn_190807162157-0.05-1.xlsx"                  
-[15] "/media/josephus/Elements/DEanalysis/rescue-0731/mesp1D-msgn1D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mesp1D-msgn1D-hm_k2-vs-wtn_180801182430-0.05-1.xlsx"                 
-[16] "/media/josephus/Elements/DEanalysis/rescue-0731/mesp1D-msgn1D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mesp1D-msgn1D-hm_k2-vs-wtn_180801182430-0.05-1.xlsx"                 
-[17] "/media/josephus/Elements/DEanalysis/rescue-0731/mixl1D-foxa2D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mixl1D-foxa2D-hm_k2-vs-wtn_180801182607-0.05-1.xlsx"                 
-[18] "/media/josephus/Elements/DEanalysis/rescue-0731/mixl1D-foxa2D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mixl1D-foxa2D-hm_k2-vs-wtn_180801182607-0.05-1.xlsx"                 
-[19] "/media/josephus/Elements/DEanalysis/rev2019-six2-dko-vs-wtn/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-six2-dko-vs-wtn_dKO-vs-WT_190808141531-0.05-1.xlsx"      
+# > fpaths
+#  [1] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mesp1-mgsn1-six2_dKO-vs-WT_190812144822-0.05-1.xlsx"
+#  [2] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mesp1-mgsn1-six2_dKO-vs-WT_190812144822-0.05-1.xlsx"
+#  [3] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mesp1-mgsn1-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mesp1-mgsn1-six2_dKO-vs-WT_190812144822-0.05-1.xlsx"
+#  [4] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mixl1-foxa2-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mixl1-foxa2-six2_dKO-vs-WT_190812184340-0.05-1.xlsx"
+#  [5] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mixl1-foxa2-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mixl1-foxa2-six2_dKO-vs-WT_190812184340-0.05-1.xlsx"
+#  [6] "/media/josephus/Elements/DEanalysis/rev2019-dko-vs-wt_mixl1-foxa2-six2/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-dko-vs-wt_mixl1-foxa2-six2_dKO-vs-WT_190812184340-0.05-1.xlsx"
+#  [7] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5Ad-br5AD-brGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5Ad-br5AD-brGFPAD_k2-vs-wtn_190507114338-0.05-1.xlsx"            
+#  [8] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5Ad-br5AD-brGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5Ad-br5AD-brGFPAD_k2-vs-wtn_190507114338-0.05-1.xlsx"            
+#  [9] "/media/josephus/Elements/DEanalysis/heatmaps-181031/br-181031/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-br-hm_k2-vs-wtn_181031160803-0.05-1.xlsx"                                      
+# [10] "/media/josephus/Elements/DEanalysis/heatmaps-181031/br-181031/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-br-hm_k2-vs-wtn_181031160803-0.05-1.xlsx"                                      
+# [11] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5AdD-eoGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5AdD-eoGFPAD_k2-vs-wtn_190507113057-0.05-1.xlsx"                      
+# [12] "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5AdD-eoGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5AdD-eoGFPAD_k2-vs-wtn_190507113057-0.05-1.xlsx"                      
+# [13] "/media/josephus/Elements/DEanalysis/rev2019-jitters-190807-eo/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-jitters-190807-eo_k2-vs-wtn_190807162157-0.05-1.xlsx"                  
+# [14] "/media/josephus/Elements/DEanalysis/rev2019-jitters-190807-eo/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-jitters-190807-eo_k2-vs-wtn_190807162157-0.05-1.xlsx"                  
+# [15] "/media/josephus/Elements/DEanalysis/rescue-0731/mesp1D-msgn1D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mesp1D-msgn1D-hm_k2-vs-wtn_180801182430-0.05-1.xlsx"                 
+# [16] "/media/josephus/Elements/DEanalysis/rescue-0731/mesp1D-msgn1D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mesp1D-msgn1D-hm_k2-vs-wtn_180801182430-0.05-1.xlsx"                 
+# [17] "/media/josephus/Elements/DEanalysis/rescue-0731/mixl1D-foxa2D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mixl1D-foxa2D-hm_k2-vs-wtn_180801182607-0.05-1.xlsx"                 
+# [18] "/media/josephus/Elements/DEanalysis/rescue-0731/mixl1D-foxa2D-hm/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-rescue-mixl1D-foxa2D-hm_k2-vs-wtn_180801182607-0.05-1.xlsx"                 
+# [19] "/media/josephus/Elements/DEanalysis/rev2019-six2-dko-vs-wtn/dKO-vs-WT/DE-table/DE-scaled-avg-dots-sem-sig-rev2019-six2-dko-vs-wtn_dKO-vs-WT_190808141531-0.05-1.xlsx"      
 
 
 
@@ -572,9 +551,6 @@ for (i in 1:length(fpaths)) {
                                              add = nm,
                                              error.type = "sd")
 }
-
-
-
 
 fpaths <- "/media/josephus/Elements/DEanalysis/wt-vs-k2-eo5AdD-eoGFPAD/k2-vs-wtn/DE-table/DE-scaled-avg-dots-sem-sig-wt-vs-k2-eo5AdD-eoGFPAD_k2-vs-wtn_190507113057-0.05-1.xlsx" 
 genes <- list(eo.epi.ne.genes = c("Pou5f1", "Nanog", "Wnt8a", "Pou3f1", "Sox1", "Sox2", "Sox3", "Olig3", "Efnb1", "Ncan"))
