@@ -5,63 +5,84 @@ rm(list=ls())
 # helper functions
 ######################################################################
 
-na_to_zero <- function(vec) {
-  vec[is.na(vec)] <- 0
-  vec
+
+####################################################################
+# binquire() and inquire()
+####################################################################
+
+source("~/inquire.R")
+# not yet tested
+
+biocUpgrade <- function(){
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("BiocUpgrade")
+}
+
+detach_package <- function(pkg, character.only = FALSE) {
+  if(!character.only) {
+    pkg <- deparse(substitute(pkg))
+  }
+  search_item <- paste("package", pkg, sep = ":")
+  while(search_item %in% search()) {
+    detach(search_item, unload = TRUE, character.only = TRUE)
+  }
 }
 
 ####################################################################
 # required packages
 ####################################################################
 
-# I/O
-require(xlsx2dfs)
+binquire(DESeq2)     # DE analysis
+# inquire(xlsx)        # xlsx printing
+binquire(edgeR)      # DE analysis
 
-# DE analysis
-require(DESeq2)
-require(edgeR)
+binquire(biomaRt)     # for Annotations
+# for this necessary:
+# sudo apt install libssl-dev
+binquire(org.Mm.eg.db)
+binquire(org.Hs.eg.db)
 
-# for heatmaps
-require(gplots)
-require(RColorBrewer)
-require(pheatmap)
+binquire(GO.db)       # for GO analysis
+binquire(GOstats)     # for GO analysis
 
-# GO analysis (Gene name conversions)
-# requires # sudo apt install libssl-dev
-require(biomaRt)
-require(org.Mm.eg.db)
-require(org.Hs.eg.db)
+binquire(gage)        # for KEGG analysis
+binquire(gageData)
+binquire(KEGG.db)
+binquire(annotate)
+binquire(genefilter)
+binquire(vsn)
 
-require(GO.db)
-require(GOstats)
-require(clusterProfiler)
+# inquire(Cairo)       # pdf output
+# # necessary:
+# # sudo apt install libcairo2-dev libxt-dev
+# CairoFonts(
+#   regular="Arial:style=Regular",
+#   bold="Arial:style=Bold",
+#   italic="Arial:style=Italic",
+#   bolditalic="Arial:style=Bold Italic,BoldItalic",
+#   symbol="Symbol")
 
-# gskb
-require(gskb)
-
-# KEGG analysis
-require(gage)
-require(gageData)
-require(KEGG.db)
-require(annotate)
-require(genefilter)
-require(vsn)
-
-require(ggplot2)     # for plots
-require(Glimma)      # for interactive plots
+inquire(ggplot2)     # for plots
+binquire(Glimma)      # for interactive plots
 
 #####################################################################
-require(SummarizedExperiment)
+inquire(SummarizedExperiment)
 
-require(ggplot2)               # for graphics
-require(reshape)               # for graphics
+inquire(ggplot2)               # for graphics
+inquire(reshape)               # for graphics
 
+inquire(gplots)                # for heatmap
+inquire(RColorBrewer)          # for heatmap
 
+binquire(pheatmap)             # for heatmap
+require(gskb)                  # for gskb 
+require(clusterProfiler)
 require(GenomicFeatures)
-
+require(openxlsx)
+require(clusterProfiler)
+require(org.Mm.eg.db)
 require(plotly)
 require(magrittr)
-
 
 options(java.parameters = "-Xmx3000m")
 # https://stackoverflow.com/questions/21937640/handling-java-lang-outofmemoryerror-when-writing-to-excel-from-r
@@ -234,6 +255,45 @@ counts.std.build <- function(cnts.df, cols.list, groups){
                           function(idxs) rowSds(cnts.df[, idxs, drop = FALSE])))
   colnames(cnts.df) <- new_col_names
   cnts.df[, (ncol_old + 1):ncol_limit]
+}
+
+
+scale.raw.counts.with.SD <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "") {
+  # Takes cnts.DE.sig.fpath and meta.fpath and calculates standard deviation
+  # and puts the new file with '-scaled-avg-' into same path like ctns.DE.sig.fpath.
+  cnts.DE.sig <- xlsx2df.list(cnts.DE.sig.fpath)[["all.names.srt"]] # xslx2dfs
+  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
+  meta.df$condition <- factor(meta.df$condition,
+                              levels = unique(meta.df$condition))
+  cond <- unique(as.character(meta.df$condition))
+  cond.cols <- lapply(cond,
+                      function(cd) which(as.character(meta.df$condition) == cd))
+  names(cond.cols) <- cond
+
+  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
+  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
+  
+  scaledata <- t(scale(t(cnts.avg)))
+  
+  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
+  
+  upper.sds.values <- scaledata + scaled.sds
+
+  lower.sds.values <- scaledata - scaled.sds
+  
+  res <- list(scaled_values = scaledata,
+              scaled_StdDevs = scaled.sds,
+              upper_SD_values = upper.sds.values,
+              lower_SD_values = lower.sds.values)
+  res <- lapply(res, as.data.frame)
+  
+  if (out.fpath == "") {
+    out.fpath <- gsub("-cnts-", "-scaled-avg-", cnts.DE.sig.fpath)
+  }
+
+  write.dfs(res, out.fpath) # dfs2xlsx
+
+  res
 }
 
 # ####################################################################
@@ -496,8 +556,7 @@ meta2heatmap <- function(meta.df, cnts.avg.nrm, resSig, outdirpath=".",
       geom_line() +
       xlab("Time") +
       ylab("Expression") +
-      labs(title = "Cluster Expression by Group", color = "Cluster") +
-      theme(text=element_text(size=16,  family="Arial")) # added becaus of fonts problem
+      labs(title = "Cluster Expression by Group", color = "Cluster")
     png(paste0(outdirpath, "/k", k, "_", core.name(meta.df), paste0("-ClusterAll_", alpha, "_", lFC, "_", time.now(), ".png")))
     print(p1)
     dev.off()
@@ -606,7 +665,40 @@ meta2heatmap <- function(meta.df, cnts.avg.nrm, resSig, outdirpath=".",
   }
   
 
-
+#   ##################
+#   # black grey red
+#   ##################
+#   
+#   {
+#     svg(paste0(outname, "kgr.svg"))
+#     pheatmap(scaledata.k[, 1:length(unique(meta.df$condition))],
+#              cluster_rows = F,
+#              cluster_cols = F,
+#              cellwidth = 40,
+#              col = colors.kgr,
+#              fontsize_row = 0.5,
+#              border_color = NA,
+#              gaps_row = gaps.idxs          # gap after each block
+#     )
+#     dev.off()
+#   }
+#   
+#   {
+#     setEPS()
+#     postscript(paste0(outname, "kgr.eps"))
+#     pheatmap(scaledata.k[, 1:length(unique(meta.df$condition))],
+#              cluster_rows = F,
+#              cluster_cols = F,
+#              cellwidth = 40,
+#              col = colors.kgr,
+#              fontsize_row = 0.5,
+#              border_color = NA,
+#              gaps_row = gaps.idxs          # gap after each block
+#              
+#     )
+#     dev.off()
+#   }
+# 
 
 
   # print scaledata
@@ -856,6 +948,11 @@ meta2iVolcano <- function(meta.df, DESeq2.obj, DESeq2.obj.disp, outdirpath=".",
   title <- paste0("Volcano Plot ", dataname, " ", time.now())
   filename <- paste0("iVolcano_", dataname, "_", core.name(meta.df), "_", time.now(), "_", alpha, "_", lFC, "_DESeq2")
   {
+    # remove NAs in status vector
+    status.vec <- ifelse(abs(res.DESeq2$log2FoldChange) > lFC &
+                               res.DESeq2$padj < alpha, 1, 0)
+    status.vec[is.na(status.vec)] <- 0
+    
     glXYPlot(x=res.DESeq2$log2FoldChange, y=-log10(res.DESeq2$pvalue),
              counts = counts(DESeq2.obj)[rownames(res.DESeq2), ],
              anno = pseudodf(rownames(counts(DESeq2.obj))),
@@ -864,8 +961,7 @@ meta2iVolcano <- function(meta.df, DESeq2.obj, DESeq2.obj.disp, outdirpath=".",
              xlab = "log2FC",
              ylab = "log10padj",
              main = title,
-             status = na_to_zero(ifelse(abs(res.DESeq2$log2FoldChange) > lFC &
-                               res.DESeq2$padj < alpha, 1, 0)), # na_to_zero() had to be done
+             status = status.vec,
              side.main = "symbol",
              side.xlab = "Group",
              side.ylab = "Counts",
@@ -876,6 +972,11 @@ meta2iVolcano <- function(meta.df, DESeq2.obj, DESeq2.obj.disp, outdirpath=".",
   title <- paste0("iMD Plot ", dataname, " ", time.now())
   filename <- paste0("iMD_", dataname, "_", core.name(meta.df), "_", time.now(), "_DESeq2")
   {
+    # remove NAs in status vector
+    status.vec <- ifelse(abs(res.DESeq2$log2FoldChange) > lFC &
+                               res.DESeq2$padj < alpha, 1, 0)
+    status.vec[is.na(status.vec)] <- 0
+    
     glMDPlot(x = res.DESeq2,
              counts = counts(DESeq2.obj)[rownames(res.DESeq2), ],
              anno = pseudodf(rownames(counts(DESeq2.obj))), # GeneID and symbol as col
@@ -884,8 +985,7 @@ meta2iVolcano <- function(meta.df, DESeq2.obj, DESeq2.obj.disp, outdirpath=".",
              ylab = "log2FC",
              xlab = "Average log10 CPM",
              main = title,
-             status = ifelse(abs(res.DESeq2$log2FoldChange) > lFC &
-                               res.DESeq2$padj < alpha, 1, 0), # maybe in future na_to_zero() necessary?
+             status = status.vec,
              side.xlab = "Group",
              side.ylab = "Counts",
              side.main = "symbol",
@@ -1140,6 +1240,22 @@ export_plotly2SVG <- function(plotly_graph,
     
     if ( autocrop_png ) autocrop_png(path_to_png = filepath_png)
   }
+  # close and stop selenium driver!
+  # otherwise: Selenium server signals port = 4567 is already in use.
+  # in this case, do: netstat -np | grep :4567
+# tcp        0      0 127.0.0.1:59734         127.0.0.1:4567          ESTABLISHED 13867/R         
+# tcp6       0      0 127.0.0.1:4567          127.0.0.1:59734         ESTABLISHED 13998/java  
+  # process ids (PID) here are 13867 and 13998
+  # do kill 13867 # actually this not!
+  #    kill 13998 # actually this alone suffices!
+
+  # 
+  selenium_driver$client$close()
+  selenium_driver[["server"]]$stop()
+
+  # if user forgets to stop server it will be garbage collected.
+  rm(selenium_driver)
+  # gc(selenium_driver)
 }
 
 
@@ -1469,7 +1585,7 @@ df2plotlyPCA <- function(df, colorPalette, colorCol, title, outdir, outfname, pd
 
 
 ###########################
-# GO analysis (stand 20190809)
+# GO analysis (stand 20180917)
 ###########################
 
 
@@ -1477,46 +1593,26 @@ df2plotlyPCA <- function(df, colorPalette, colorCol, title, outdir, outfname, pd
 # load packages
 #######################################
 
+# source("~/Dropbox/R/central-scripts/io.xlsx.R")
 require(clusterProfiler)
 require(org.Mm.eg.db)
+keytypes(org.Mm.eg.db)
 
 
-# keytypes(org.Mm.eg.db)
-# 
-# # [1] "ACCNUM"       "ALIAS"        "ENSEMBL"     
-# # [4] "ENSEMBLPROT"  "ENSEMBLTRANS" "ENTREZID"    
-# # [7] "ENZYME"       "EVIDENCE"     "EVIDENCEALL" 
-# # [10] "GENENAME"     "GO"           "GOALL"       
-# # [13] "IPI"          "MGI"          "ONTOLOGY"    
-# # [16] "ONTOLOGYALL"  "PATH"         "PFAM"        
-# # [19] "PMID"         "PROSITE"      "REFSEQ"      
-# # [22] "SYMBOL"       "UNIGENE"      "UNIPROT"  
-# 
+# [1] "ACCNUM"       "ALIAS"        "ENSEMBL"     
+# [4] "ENSEMBLPROT"  "ENSEMBLTRANS" "ENTREZID"    
+# [7] "ENZYME"       "EVIDENCE"     "EVIDENCEALL" 
+# [10] "GENENAME"     "GO"           "GOALL"       
+# [13] "IPI"          "MGI"          "ONTOLOGY"    
+# [16] "ONTOLOGYALL"  "PATH"         "PFAM"        
+# [19] "PMID"         "PROSITE"      "REFSEQ"      
+# [22] "SYMBOL"       "UNIGENE"      "UNIPROT"  
 
 
 
 #######################################
 # ALIAS to ENTREZID data frame rownames
 #######################################
-
-alias2entrezid.genenames <- function(genenames) {
-  "Convert using biomart ALIAS the equivalents of ENTREZID."
-  "It is not a 1:1 mapping! So number of output != number of genenames!"
-  genes2eg <- bitr(genenames,
-                   fromType = "ALIAS",
-                   toType   = "ENTREZID",
-                   OrgDb    = "org.Mm.eg.db")
-  genes2eg.list <- split(genes2eg, genes2eg$ALIAS)
-  genes2eg.list <- lapply(genes2eg.list, function(df) df$ENTREZID)
-  # keys are ALIAS and values are vector of entrezids
-  entrezids.list <- genes2eg.list[genenames]
-  entrezids <- unlist(entrezids.list) # flattening
-  not.found.genes <- sort(setdiff(genenames, names(genes2eg.list)))
-  attr(entrezids, "not.found.genes") <- not.found.genes
-  found.genes     <- names(genes2eg.list)
-  attr(entrezids, "found.genes") <- found.genes
-  entrezids
-}
 
 alias2entrezid.df <- function(DE.df) {
   # converts rownames from ALIAS to ENTREZID
@@ -1549,25 +1645,17 @@ alias2entrezid.df <- function(DE.df) {
 }
 
 
-
-
 #######################################
 # found and not founds
 #######################################
 
-# this works also with our list of genenames
-
-ListNotFounds <- function(eg.x.list) {
-  lapply(eg.x.list, function(x) data.frame(alias = attr(x, "not.found.genes")))
+dfListNotFounds <- function(eg.df.list) {
+  lapply(eg.df.list, function(df) data.frame(alias = attr(df, "not.found.genes")))
 }
-dfListNotFounds <- ListNotFounds
 
 dfListFounds    <- function(eg.df.list) {
   names.list <- lapply(eg.df.list, function(df) attr(df, "found.genes"))
   Map(f = function(df, names.vec) {df$alias <- names.vec; df}, eg.df.list, names.list)
-}
-ListFounds <- function(eg.x.list) {
-  lapply(eg.x.list, function(x) data.frame(alias = attr(x, "found.genes")))
 }
 
 
@@ -1580,13 +1668,8 @@ ListFounds <- function(eg.x.list) {
 # https://github.com/GuangchuangYu/clusterProfiler/issues/28
 
 
-EnrichGO <- function(x, ont, simplifyp=FALSE) {
-  # Return enchrichment for a dataframe with entrezid rownames or a vector of entrezids
-  res <- enrichGO(gene          = if (is.data.frame(x)) {
-                                        rownames(x)
-                                  } else if (is.vector(x)) {
-                                   x
-                                  },
+dfEnrichGO <- function(eg.df, ont) {
+  res <- enrichGO(gene          = rownames(eg.df),
                   OrgDb         = org.Mm.eg.db,
                   keyType       = "ENTREZID",
                   ont           = ont,
@@ -1594,21 +1677,18 @@ EnrichGO <- function(x, ont, simplifyp=FALSE) {
                   pvalueCutoff  = 0.05,
                   qvalueCutoff  = 0.05,
                   readable      = TRUE)
-  if (simplifyp) {
-      res <- simplify(res,
-                      cutoff = 0.7,
-                      by = "p.adjust",
-                      select_fun = min)
-  }
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+#   res <- simplify(res,
+#                   cutoff = 0.7,
+#                   by = "p.adjust",
+#                   select_fun = min) # doesn't work since update
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
-dfEnrichGO <- EnrichGO # x is a df
 
-ListEnrichGO <- function(eg.x.list, ont) {
-  lapply(eg.x.list, function(x) dfEnrichGO(x, ont))
+dfListEnrichGO <- function(eg.df.list, ont) {
+  lapply(eg.df.list, function(df) dfEnrichGO(df, ont))
 }
-dfListEnrichGO <- ListEnrichGO # eg.df.list
+
 
 
 #######################################
@@ -1628,7 +1708,7 @@ setMethod("simplify", signature(x="gseaResult"),
             if (!x@setType %in% c("BP", "MF", "CC"))
               stop("simplify only applied to output from enrichGO...")
             x@result %<>% simplify_internal(., cutoff, by, select_fun,
-                                            measure, x@setType, semData=semData)
+                                            measure, x@setType, semData)
             return(x)
           }
 )
@@ -1692,8 +1772,6 @@ simplify_internal <- function(res, cutoff=0.7, by="p.adjust", select_fun=min, me
 #############################################
 # GO GSEA
 #############################################
-# for GO GSEA, the log2FoldChange for fanking is needed.
-# so for a pure gene list this is not suitable
 
 dfGseGO <- function(eg.df, ont) {
   genes <- eg.df$log2FoldChange
@@ -1712,16 +1790,13 @@ dfGseGO <- function(eg.df, ont) {
 #                   cutoff = 0.7,
 #                   by = "p.adjust",
 #                   select_fun = min)
-
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
 
 dfListGseGO <- function(eg.df.list, ont) {
   lapply(eg.df.list, function(df) dfGseGO(df, ont))
 }
-
-
 
 
 
@@ -1820,187 +1895,6 @@ do_all_GO_enrichment <- function(fpathDExlsx,
 
 
 
-
-################################################################################
-# GO analysis only with symbol names
-################################################################################
-
-#######################################
-# load packages
-#######################################
-
-require(clusterProfiler)
-require(org.Mm.eg.db)
-
-
-# keytypes(org.Mm.eg.db)
-# 
-# # [1] "ACCNUM"       "ALIAS"        "ENSEMBL"     
-# # [4] "ENSEMBLPROT"  "ENSEMBLTRANS" "ENTREZID"    
-# # [7] "ENZYME"       "EVIDENCE"     "EVIDENCEALL" 
-# # [10] "GENENAME"     "GO"           "GOALL"       
-# # [13] "IPI"          "MGI"          "ONTOLOGY"    
-# # [16] "ONTOLOGYALL"  "PATH"         "PFAM"        
-# # [19] "PMID"         "PROSITE"      "REFSEQ"      
-# # [22] "SYMBOL"       "UNIGENE"      "UNIPROT"  
-# 
-
-
-#######################################
-# ALIAS to ENTREZID data frame rownames
-#######################################
-
-alias2entrezid.genenames <- function(genenames) {
-  "Convert using biomart ALIAS the equivalents of ENTREZID."
-  "It is not a 1:1 mapping! So number of output != number of genenames!"
-  genes2eg <- bitr(genenames,
-                   fromType = "ALIAS",
-                   toType   = "ENTREZID",
-                   OrgDb    = "org.Mm.eg.db")
-  genes2eg.list <- split(genes2eg, genes2eg$ALIAS)
-  genes2eg.list <- lapply(genes2eg.list, function(df) df$ENTREZID)
-  # keys are ALIAS and values are vector of entrezids
-  entrezids.list <- genes2eg.list[genenames]
-  entrezids <- unlist(entrezids.list) # flattening
-  not.found.genes <- sort(setdiff(genenames, names(genes2eg.list)))
-  attr(entrezids, "not.found.genes") <- not.found.genes
-  found.genes     <- names(genes2eg.list)
-  attr(entrezids, "found.genes") <- found.genes
-  entrezids
-}
-
-
-#######################################
-# found and not founds
-#######################################
-
-# this works also with our list of genenames
-
-get.founds <- function(egs) {
-  data.frame(alias=attr(egs, "found.genes"))
-}
-
-get.not.founds <- function(egs) {
-  data.frame(alias=attr(egs, "not.found.genes"))
-}
-
-#######################################
-# GO overrepresentation
-# simplify is discussed here:
-#######################################
-# https://github.com/GuangchuangYu/clusterProfiler/issues/28
-
-
-EnrichGO.genenames <- function(genenames, ont, simplifyp=FALSE) {
-  # Return enchrichment for a dataframe with entrezid rownames or a vector of entrezids
-  res <- enrichGO(gene          = genenames,
-                  OrgDb         = org.Mm.eg.db,
-                  keyType       = "ALIAS",
-                  ont           = ont,
-                  pAdjustMethod = "BH",
-                  pvalueCutoff  = 0.05,
-                  qvalueCutoff  = 0.05,
-                  readable      = TRUE)
-  if (simplifyp) {
-      res <- simplify(res,
-                      cutoff = 0.7,
-                      by = "p.adjust",
-                      select_fun = min)
-  }
-  res
-}
-# dfEnrichGO <- EnrichGO # x is a df
-
-
-
-
-#######################################################
-# GO BP,CC,MF entire analysis with or without selection
-# CNTS removed, since not used in GO
-#######################################################
-
-
-do_GO_enrichment.genenames <- function(genenames,
-                                       outfpath,
-                                       simplifyp=FALSE) { # when genenames, then no GSEA
-  outBase <- dirname(outfpath)
-  fileName   <- basename(outfpath)
-  decorateFname <- function(textPiece, fname=fileName) gsub(".xlsx", 
-                                                   paste0(textPiece, "_GO.xlsx"), 
-                                                   fname)
-  overrepFname_ont <- decorateFname("over_GO_")
-  gseaFname_ont <- decorateFname("gsea_GO_")
-  notFoundFnameDE <- decorateFname("not_found_")
-  FoundFnameDE <- decorateFname("found_")
-  
-  if (!dir.exists(outBase)) {
-    dir.create(outBase, recursive = TRUE)
-  }
-  
-  # Go enrichment from genenames
-  df.bp <- EnrichGO.genenames(genenames, "BP", simplifyp=simplifyp)
-  df.cc <- EnrichGO.genenames(genenames, "CC", simplifyp=simplifyp)
-  df.mf <- EnrichGO.genenames(genenames, "MF", simplifyp=simplifyp)
-  
-  # collect the founds
-  founds.df <- get.founds(genenames)
-  not.founds.df <- get.not.founds(genenames)
-  dfs2xlsx(withNames("BP", df.bp,
-                     "CC", df.cc,
-                     "MF", df.mf),
-           outfpath)
-#                      "found.genes", founds.df,
-#                      "not.fount.genes", not.founds.df
-
-}
-
-# test: do_GO_enrichment.genenames(up.genes, "~/test.out.xlsx")
-
-do.GO.xlsx <- function(xlsx) {
-  genes <- unique(xlsx2dfs::xlsx2dfs(xlsx)[[1]]$gene)
-  do_GO_enrichment.genenames(genes,
-                       gsub(".xlsx", "_GO.xlsx", xlsx),
-                       simplify=simplifyp)
-  gc()
-}
-
-
-do.go.analyses <- function(Kmolten.rds.fpath, parallelize.p = F, simplifyp = T) {
-  
-  ####################################################################
-  # inferred paths
-  ####################################################################
-  path <- dirname(dirname((Kmolten.rds.fpath)))
-  jitter.xlsx.paths <- dir(path, pattern="_jitter.xlsx", recursive=T, full.names=T)
-  
-  if (parallelize.p) {
-    bplapply(jitter.xlsx.paths, FUN=do.GO.xlsx,
-      BPPARAM=mcp)
-  } else {
-    for (xlsx in jitter.xlsx.paths) {
-      genes <- unique(xlsx2dfs(xlsx)[[1]]$gene)
-      do_GO_enrichment.genenames(genes,
-                                 gsub(".xlsx", "_GO.xlsx", xlsx),
-                                 simplify=simplifyp)
-    }
-  }
-}
-
-analyze.go <- function(xlsx.fpath, parallelize.p = F, simplifyp = T) {
-  
-  ####################################################################
-  # inferred paths
-  ####################################################################
-  genes <- unique(xlsx2dfs(xlsx.fpath)[[1]]$gene)
-  do_GO_enrichment.genenames(genes,
-                             gsub(".xlsx", if (simplifyp) {"_GO.xlsx"} else {"_GO_extended.xlsx"}, xlsx),
-                             simplify=simplifyp)
-}
-
-
-
-################################################################################
-
 #########################
 # KEGG
 #########################
@@ -2019,7 +1913,7 @@ dfEnrichKEGG <- function(eg.df) {
                     organism      = 'mmu',
                     pvalueCutoff  =  0.05,
                     qvalueCutoff  =  0.05)
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
 
@@ -2042,7 +1936,7 @@ dfGseKEGG <- function(eg.df, pCutOff = 0.05, org = 'mmu') {
                  minGSSize     = 10,
                  organism      = org,
                  pvalueCutoff  = pCutOff)
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
 
@@ -2068,7 +1962,7 @@ dfEnrichMKEGG <- function(eg.df, pCutOff = 0.05, qCutOff = 0.05, org = 'mmu') {
                      organism      = org,
                      pvalueCutoff  = pCutOff,
                      qvalueCutoff  = qCutOff)
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
 
@@ -2090,7 +1984,7 @@ dfGseMKEGG <- function(eg.df, pCutOff = 0.05, org = 'mmu') {
                   pAdjustMethod = 'BH',
                   organism      = org,
                   pvalueCutoff  = pCutOff)
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
 
@@ -2192,17 +2086,8 @@ do_KEGG_enrichment <- function(fpathDExlsx,
 
 require(gskb)
 
-# rsync -avs /media/josephus/archive/gskb/all/mGSKB_Entrez_cl_grouped.list.gmt.RDS josephus@132.230.165.153:/media/daten/arnold/josephus/data/
-
 # load gskb data which were prepared previously
-try( {
-  all_ez_grouped <- readRDS(file = "/media/josephus/archive/gskb/all/mGSKB_Entrez_cl_grouped.list.gmt.RDS")
-})
-
-# try( {
-#   all_ez_grouped <- readRDS(file = "/media/daten/arnold/josephus/data/mGSKB_Entrez_cl_grouped.list.gmt.RDS")
-# })
-
+all_ez_grouped <- readRDS(file = "/media/josephus/archive/gskb/all/mGSKB_Entrez_cl_grouped.list.gmt.RDS")
 
 names(all_ez_grouped)
 # [1] "MousePath_Co-expression_eg.gmt" "MousePath_GO_eg.gmt"            "MousePath_Location_eg.gmt"      "MousePath_Metabolic_eg.gmt"     "MousePath_miRNA_eg.gmt"        
@@ -2255,7 +2140,7 @@ dfGseDB <- function(df, gmt, pCutOff = 0.05, pAdj = "BH") {
               maxGSSize = 1000,
               pvalueCutoff = pCutOff, 
               pAdjustMethod = pAdj)
-  res <- setReadable(res, org.Mm.eg.db, keytype = "ENTREZID")
+  res <- setReadable(res, org.Mm.eg.db, keyType = "ENTREZID")
   res
 }
 
@@ -2425,449 +2310,4 @@ do_all_gskb_enrichments <- function(DEfpath, outBase, all_ez_grouped, xlsx.path 
                      DE.list.mode.p = DE.list.mode.p,
                      gsea.p = gsea.p)
 }
-
-
-################################################################################
-
-##########################################
-# for scaling
-# and adding normed averaged values with dots
-##########################################
-
-
-require(xlsx2dfs)
-if (!require(rlang)) {
-  install.packages("rlang")
-  require(tidyverse)
-}
-if (!require(tidyverse)) {
-  install.packages("tidyverse")
-  require(tidyverse)
-}
-require(reshape2)
-
-#####################################################################
-# helper functions for averaging tables
-#####################################################################
-
-counts.avg.build <- function(cnts.df, cols.list, groups){
-  cnts.df <- as.data.frame(cnts.df)
-  ncol_old <- length(colnames(cnts.df))
-  ncol_limit <- length(groups) + ncol_old
-  new_col_names <- c(colnames(cnts.df), groups)
-  cnts.df <- cbind(cnts.df,
-                   lapply(cols.list,
-                          function(idxs) rowMeans(cnts.df[, idxs, drop = FALSE])))
-  colnames(cnts.df) <- new_col_names
-  cnts.df[, (ncol_old + 1):ncol_limit]
-}
-
-counts.std.build <- function(cnts.df, cols.list, groups){
-  cnts.df <- as.data.frame(cnts.df)
-  rowSds <- function(df) apply(df, 1, sd)
-  ncol_old <- length(colnames(cnts.df))
-  ncol_limit <- length(groups) + ncol_old
-  new_col_names <- c(colnames(cnts.df), groups)
-  cnts.df <- cbind(cnts.df,
-                   lapply(cols.list,
-                          function(idxs) rowSds(cnts.df[, idxs, drop = FALSE])))
-  colnames(cnts.df) <- new_col_names
-  cnts.df[, (ncol_old + 1):ncol_limit]
-}
-
-scale.raw.counts.with.SD <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "") {
-  cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[["all.names.srt"]]
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
-  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
-  
-  scaledata <- t(scale(t(cnts.avg)))
-  
-  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
-  
-  upper.sds.values <- scaledata + scaled.sds
-
-  lower.sds.values <- scaledata - scaled.sds
-  
-  res <- list(scaled_values = scaledata,
-              scaled_StdDevs = scaled.sds,
-              upper_SD_values = upper.sds.values,
-              lower_SD_values = lower.sds.values)
-  res <- lapply(res, as.data.frame)
-  if (out.fpath != "") {
-    dfs2xlsx(res, out.fpath)
-  }
-  res
-}
-
-
-scale.raw.counts.with.SD.with.orig.values <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "") {
-  cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[["all.names.srt"]]
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
-  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
-  
-  scaledata <- t(scale(t(cnts.avg)))
-  
-  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
-  upper.sds.values <- scaledata + scaled.sds
-  lower.sds.values <- scaledata - scaled.sds
-  
-  ## scale the counts
-  avgs.avgs <- apply(cnts.avg, MARGIN=1, FUN=mean)
-  sds.avgs  <- apply(cnts.avg, MARGIN=1, FUN=sd)
-  
-  # scaledata <- (cnts.avg/sds.avgs - avgs.avgs/sds.avgs) # exact scaledata
-  scaled.cnts.DE.sig <- (cnts.DE.sig/sds.avgs - avgs.avgs/sds.avgs)
-  
-  res <- list(scaled_values = scaledata,
-              scaled_StdDevs = scaled.sds,
-              upper_SD_values = upper.sds.values,
-              lower_SD_values = lower.sds.values,
-              scaled_counts = scaled.cnts.DE.sig)
-  res <- lapply(res, as.data.frame)
-  if (out.fpath != "") {
-    dfs2xlsx(res, out.fpath)
-  }
-  res
-}
-
-
-
-
-
-############################################
-# SEM
-############################################
-
-sem <- function(x) sd(x)/sqrt(length(x))
-
-counts.sem.build <- function(cnts.df, cols.list, groups){
-  cnts.df <- as.data.frame(cnts.df)
-  rowSem <- function(df) apply(df, 1, sem)
-  ncol_old <- length(colnames(cnts.df))
-  ncol_limit <- length(groups) + ncol_old
-  new_col_names <- c(colnames(cnts.df), groups)
-  cnts.df <- cbind(cnts.df,
-                   lapply(cols.list,
-                          function(idxs) rowSem(cnts.df[, idxs, drop = FALSE])))
-  colnames(cnts.df) <- new_col_names
-  cnts.df[, (ncol_old + 1):ncol_limit]
-}
-
-
-scale.with.SD.SEM <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "", tabname="all.names.srt") {
-  cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[[tabname]]
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
-  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
-  sem.avg  <- counts.sem.build(cnts.DE.sig, cond.cols, cond)
-  
-  scaledata <- t(scale(t(cnts.avg)))
-  
-  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
-  scaled.sem <- sem.avg/apply(cnts.avg, 1, sem)
-  
-  res <- list(scaled_values = scaledata,
-              scaled_StdDevs = scaled.sds,
-              scaled_Sems = scaled.sem)
-  res <- lapply(res, as.data.frame)
-  if (out.fpath != "") {
-    dfs2xlsx(res, out.fpath)
-  }
-  res
-}
-
-scale.centering.with.SD.SEM <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "", tabname="all.names.srt") {
-  cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[[tabname]]
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
-  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
-  sem.avg  <- counts.sem.build(cnts.DE.sig, cond.cols, cond)
-  
-  cnts.means.wt.dko <- rowMeans(cnts.avg[, c(1, 2)])
-  
-  scaledata <- t(scale(t(cnts.avg), center=cnts.means.wt.dko))
-  
-  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
-  scaled.sem <- sem.avg/apply(cnts.avg, 1, sem)
-  
-  res <- list(scaled_values = scaledata,
-              scaled_StdDevs = scaled.sds,
-              scaled_Sems = scaled.sem)
-  res <- lapply(res, as.data.frame)
-  if (out.fpath != "") {
-    dfs2xlsx(res, out.fpath)
-  }
-  res
-}
-
-scale.centering.with.wt.dko.SD.SEM <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "", tabname=1) {
-  cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[[tabname]]
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
-  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
-  sem.avg  <- counts.sem.build(cnts.DE.sig, cond.cols, cond)
-  #   std.avg.wt.dko  <- counts.std.build(cnts.DE.sig[, 1:6], cond.cols[1:2], cond[1:2])
-  #   sem.avg.wt.dko  <- counts.sem.build(cnts.DE.sig[, 1:6], cond.cols[1:2], cond[1:2])
-
-  stds <- apply(cnts.DE.sig[, 1:6], 1, sd)
-  
-  cnts.means.wt.dko <- rowMeans(cnts.avg[, c(1, 2)])
-  
-  scaledata <- t(scale(t(cnts.avg), center=cnts.means.wt.dko, scale=stds))
-  
-  #   scaled.sds <- std.avg.wt.dko/apply(cnts.avg[, 1:6], 1, sd)
-  #   scaled.sem <- sem.avg.wt.dko/apply(cnts.avg[, 1:6], 1, sem)
-  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
-  scaled.sem <- sem.avg/apply(cnts.avg, 1, sem)
-  res <- list(scaled_values = scaledata,
-              scaled_StdDevs = scaled.sds,
-              scaled_Sems = scaled.sem)
-  res <- lapply(res, as.data.frame)
-  if (out.fpath != "") {
-    dfs2xlsx(res, out.fpath)
-  }
-  res
-}
-
-
-scale.raw.counts.with.SD.SEM.with.orig.values <- function(cnts.DE.sig.fpath, meta.fpath, out.fpath = "") {
-  cnts.DE.sig <- xlsx2dfs(cnts.DE.sig.fpath)[["all.names.srt"]]
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  cnts.avg <- counts.avg.build(cnts.DE.sig, cond.cols, cond)
-  std.avg  <- counts.std.build(cnts.DE.sig, cond.cols, cond)
-  sem.avg  <- counts.sem.build(cnts.DE.sig, cond.cols, cond)
-  
-  scaledata <- t(scale(t(cnts.avg)))
-  
-  scaled.sds <- std.avg/apply(cnts.avg, 1, sd)
-  scaled.sem <- sem.avg/apply(cnts.avg, 1, sd)
-  upper.sds.values <- scaledata + scaled.sds
-  lower.sds.values <- scaledata - scaled.sds
-  upper.sem.values <- scaledata + scaled.sem
-  lower.sem.values <- scaledata - scaled.sem
-  
-  ## scale the counts
-  avgs.avgs <- apply(cnts.avg, MARGIN=1, FUN=mean)
-  sds.avgs  <- apply(cnts.avg, MARGIN=1, FUN=sd)
-  
-  # scaledata <- (cnts.avg/sds.avgs - avgs.avgs/sds.avgs) # exact scaledata
-  scaled.cnts.DE.sig <- (cnts.DE.sig/sds.avgs - avgs.avgs/sds.avgs)
-  
-  res <- list(scaled_values = scaledata,
-              scaled_StdDevs = scaled.sds,
-              scaled_SEM = scaled.sem,
-              upper_SD_values = upper.sds.values,
-              lower_SD_values = lower.sds.values,
-              upper_SEM_values = upper.sem.values,
-              lower_SEM_values = lower.sem.values,
-              scaled_counts = scaled.cnts.DE.sig)
-  res <- lapply(res, as.data.frame)
-  if (out.fpath != "") {
-    dfs2xlsx(res, out.fpath)
-  }
-  res
-}
-
-###########################################
-# plotting functions (they work!)
-###########################################
-# require(ggbeeswarm)
-plot.scaled.avg <- function(scale.svg.xlsx.fpath, 
-                            genes, 
-                            error.type="sd", 
-                            add.scatter=FALSE, 
-                            out.svg.fpath="") {
-  dfs <- xlsx2dfs(scale.svg.xlsx.fpath)
-  
-  meta.fpath <- dir(file.path(dirname(dirname(scale.svg.xlsx.fpath)), "meta"), pattern=".txt", full.names=T)
-  meta.df <- read.table(meta.fpath, sep = '\t', header = T, stringsAsFactors = F)
-  meta.df$condition <- factor(meta.df$condition,
-                              levels = unique(meta.df$condition))
-  cond <- unique(as.character(meta.df$condition))
-  cond.cols <- lapply(cond,
-                      function(cd) which(as.character(meta.df$condition) == cd))
-  names(cond.cols) <- cond
-
-  colname2cond <- as.character(meta.df$condition)
-  names(colname2cond) <- meta.df$sampleName
-  
-  cnts.melted <- melt(dfs[["scaled_values"]], variable.name="group")
-  sd.melted   <- melt(dfs[["scaled_StdDevs"]], variable.name="group")
-  sem.melted  <- melt(dfs[["scaled_SEM"]], variable.name="group")
-  cnts.dots.melted <- melt(dfs[["scaled_counts"]], variable.name="group")
-  cnts.melted$symbol <- rownames(dfs[["scaled_values"]])
-  sd.melted$symbol   <- rownames(dfs[["scaled_StdDevs"]])
-  sem.melted$symbol  <- rownames(dfs[["scaled_SEM"]])
-  cnts.dots.melted$symbol <- rownames(dfs[["scaled_counts"]])
-  cnts.melted <- cnts.melted[, c("symbol", "group", "value")]
-  sd.melted   <- sd.melted[, c("symbol", "group", "value")]
-  sem.melted  <- sem.melted[, c("symbol", "group", "value")]
-  cnts.dots.melted <- cnts.dots.melted[, c("symbol", "group", "value")]
-  cnts.dots.melted$group <- colname2cond[cnts.dots.melted$group]
-  cnts.melted.sel <- cnts.melted[cnts.melted$symbol %in% genes, ]
-  sd.melted.sel   <- sd.melted[sd.melted$symbol %in% genes, ]
-  sem.melted.sel  <- sem.melted[sem.melted$symbol %in% genes, ]
-  cnts.dots.melted.sel <- cnts.dots.melted[cnts.dots.melted$symbol %in% genes, ]
-  cnts.sd.sem.melted.sel <- cbind(cnts.melted.sel, 
-                                       sd=sd.melted.sel$value, 
-                                       sem=sem.melted.sel$value)
-  ## err <- if (error.type == "sd") {sd} else if (error.type == "sem") {sem} # doesn't work!
-  
-  ## that also simply doesn't work!
-  p <- ggplot(cnts.sd.sem.melted.sel, aes(x = group, 
-                                          y = value, 
-                                          fill=factor(symbol, 
-                                                      levels=genes))) +
-      theme(panel.grid.major = element_blank(),
-               panel.grid.minor = element_blank(),
-               panel.background = element_blank(),
-               axis.line = element_line(colour = "black")) + # remove background and grid
-       geom_bar(stat="identity", 
-                width=.75,
-                color="Black",
-                position = position_dodge())
-  if (error.type == "sd") {
-    p <- p +
-       geom_errorbar(aes(ymin=value-sd, 
-                         ymax=value+sd), 
-                     width=.6, 
-                     size=.9,
-                     color="Black",
-                     position=position_dodge(.75))
-  } else if (error.type == "sem") {
-    p <- p +
-       geom_errorbar(aes(ymin=value-sem, 
-                         ymax=value+sem), 
-                     width=.6, 
-                     size=.9,
-                     color="Black",
-                     position=position_dodge(.75))
-  }
-  if (add.scatter) {
-    p <- p + geom_jitter(data = cnts.dots.melted.sel,
-                         mapping = aes(x = group,
-                                       y = value),
-                         size = 1,
-                         # width=.75,
-                         position = position_dodge(0.75))
-  }
-  if (out.svg.fpath != "") {
-    ggsave(filename=out.svg.fpath, plot=p)
-  }
-} ## works!
-
-
-create.scaled.values.sem.dots.dir.or.fpath <- function(dir.or.fpath, genes=NULL, add = NULL, error.type = "sem") {
-  if (endsWith(dir.or.fpath, ".xlsx") || endsWith(dir.or.fpath, ".txt")) {
-    dir.path <- dirname(dirname(dir.or.fpath))
-  } else {
-    dir.path <- file.path(dir.or.fpath, "k2-vs-wtn")
-  }
-  meta.fpath <- dir(file.path(dir.path, "meta"), pattern = ".txt", full.names = TRUE)
-  cnts.DE.sig.fpath <- dir(file.path(dir.path, "DE-table"), pattern = "DE-cnts-sig-", full.names = TRUE)
-  out.sig.fpath  <- gsub("-cnts-", "-scaled-avg-dots-sem-", cnts.DE.sig.fpath)
-  result.1 <- scale.raw.counts.with.SD.SEM.with.orig.values(cnts.DE.sig.fpath, meta.fpath, out.sig.fpath)
-  result.2 <- scale.raw.counts.with.SD.SEM.with.orig.values(cnts.DE.sig.fpath, meta.fpath, file.path(out.revision.dir, basename(out.sig.fpath)))
-
-  if (!is.null(genes) && !is.null(add)) {
-    out.svg.fpath  <- gsub(".txt", ".svg", gsub(".xlsx", ".svg", out.sig.fpath))
-    out.svg.fpath  <- gsub("-sem-", paste0("-sem-", add, "-"), out.svg.fpath)
-    out.svg.fpath  <- gsub("-sem-",
-                           paste0("-", error.type, "-"),
-                           out.svg.fpath)
-    plot.scaled.avg(out.sig.fpath,
-                    genes = genes,
-                    error.type=error.type,
-                    add.scatter=TRUE,
-                    out.svg.fpath=out.svg.fpath)
-    plot.scaled.avg(out.sig.fpath,
-                    genes = genes,
-                    error.type=error.type,
-                    add.scatter=TRUE,
-                    out.svg.fpath=file.path(out.revision.dir, basename(out.svg.fpath)))
-  }
-}
-
-
-
-
-#######################################
-# rpkm
-#######################################
-
-require(xlsx2dfs)
-require(scater)
-
-gene.lengths.fpath <- "/home/josephus/count/tools/sym_gene_lengths.txt"
-
-print.rpkm <- function(cnts.fpath,
-                       gene.lengths.fpath,
-                       raw.count.sheet="raw-counts",
-                       out.fpath="") {
-  cnts <- xlsx2dfs(cnts.fpath)[[raw.count.sheet]]
-  sce <- SingleCellExperiment(assays=list(counts=as.matrix(cnts)))
-  sce <- normalize(sce)
-  
-  read_gene_lengths <- function(gene.lengths.fpath) {
-    gl <- read.delim(gene.lengths.fpath, sep = "\t", head = TRUE, comment.char="#")
-    sym2length <- gl$Length
-    names(sym2length) <- gl$Symbol
-    sym2length
-  }
-  
-  sym2len <- read_gene_lengths(gene.lengths.fpath)
-  cnts.rpkm.len <- calculateFPKM(sce, sym2len[rownames(cnts)], use_size_factors=FALSE)
-  cnts.rpkm.len.cl <- na.omit(cnts.rpkm.len)
-  if (out.fpath == "") {
-    out.fpath <-gsub("raw-counts", "rpkm-raw", cnts.fpath)
-  }
-  dfs2xlsx(withNames("rpkm_raw_counts", cnts.rpkm.len.cl),
-           out.fpath)
-  cnts.rpkm.len.cl
-}
-
 
