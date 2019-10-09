@@ -1,12 +1,10 @@
 # ##############################################################################
-# utility functions to imitate lisp functions in R
+# utility functions to imitate some useful lisp functions in R (list processing)
 # ##############################################################################
 
 ######################################################
 ## NIL == list()
 ######################################################
-
-
 
 ######################################################
 ## predicates
@@ -69,36 +67,7 @@ rest <- cdr
 
 
 ################
-# caar
-# cadr
-# cdar
-# cddr
-#
-# caaar
-# caadr
-# cadar
-# cdaar
-# caddr
-# cdadr
-# cddar
-# cdddr
-# 
-# caaaar
-# caaadr
-# caadar
-# cadaar
-# cdaaar
-# caaddr
-# cadadr
-# cdaadr
-# cdadar
-# cddaar
-# caddar
-# cadddr
-# cdaddr
-# cddadr
-# cdddar
-# cddddr
+# cxxxxr
 ################
 
 caar <- function(l) car(car(l))
@@ -151,20 +120,11 @@ cons <- function(el, l) {
 
 # last element of a list is NIL
 
-
-################
-# list*
-################
-
-
 ################
 # reverse
 ################
 
 reverse <- rev
-
-
-
 
 ######################################################
 ## flatten
