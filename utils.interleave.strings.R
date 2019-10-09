@@ -1,44 +1,4 @@
 
-# interleaveVecs <- function(vec1, vec2, acc=c()) {
-#   len1 <- length(vec1)
-#   len2 <- length(vec2)
-#   if (len1 == 0) {
-#     if (len2 == 0) {
-#       return(acc)
-#     } else {
-#       return(interleaveVecs(vec1, vec2[2:len2], acc=c(acc, vec2[1])))
-#     }
-#   } else {
-#     if (len2 == 0) {
-#       return(interleaveVecs(vec1[2:len1], vec2, acc=c(acc, vec1[1])))
-#     } else {
-#       return(interleaveVecs(vec1[2:len1], vec2[2:len2], acc=c(acc, vec1[1], vec2[1])))
-#     }
-#   }
-# } # wrong
-
-
-
-# # 
-# interleaveVecs <- function(vec1, vec2, acc=c()) {
-#   if (len1 == 0) {
-#     if (len2 == 0) {
-#       return(acc)
-#     } else {
-#       return(interleaveVecs(vec1, vec2[2:len2], acc=c(acc, vec2[1])))
-#     }
-#   } else {
-#     if (len2 == 0) {
-#       return(interleaveVecs(vec1[2:len1], vec2, acc=c(acc, vec1[1])))
-#     } else {
-#       return(interleaveVecs(vec1[2:len1], vec2[2:len2], acc=c(acc, vec1[1], vec2[1])))
-#     }
-#   }
-# } # wrong! 
-# > interleaveVecs(c("a", "b", "c"), c(1, 2, 3 ,4, 5))
-# Error: C stack usage  7971300 is too close to the limit
-
-
 ########################
 # interleave for vecs and lists
 ########################
