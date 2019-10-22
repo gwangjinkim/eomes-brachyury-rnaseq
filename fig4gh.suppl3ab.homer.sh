@@ -39,7 +39,18 @@ findMotifsGenome.pl "${br_final_peak_fpath}" mm10 "${out_br_bg_eo}"/ -bg "${eo_f
 
 
 
+#####################################
+# count of intervals
+#####################################
 
+wc -l "/media/josephus/Elements/galaxy_atac_data/atac-wt-merge-86.bed"
+## 56089 /media/josephus/Elements/galaxy_atac_data/atac-wt-merge-86.bed
+wc -l "/media/josephus/Elements/galaxy_atac_data/atac-dko-merge-92.bed"
+## 53224 /media/josephus/Elements/galaxy_atac_data/atac-dko-merge-92.bed
+wc -l "/media/josephus/My Book/1TB_backup/tosicj190315/Peaks_ChIP_EoGFP_pileup120.bed"
+## 30144 /media/josephus/My Book/1TB_backup/tosicj190315/Peaks_ChIP_EoGFP_pileup120.bed
+wc -l "/media/josephus/My Book/1TB_backup/tosicj190315/Peaks_ChIP_BraGFP_pileup40.bed"
+## 27598 /media/josephus/My Book/1TB_backup/tosicj190315/Peaks_ChIP_BraGFP_pileup40.bed
 
 
 
