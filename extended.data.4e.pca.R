@@ -2,6 +2,8 @@
 ###################################################################
 # Code for preparation of normalized count tables for PCA plot 
 # in extended data 4 e
+# visible under:
+# https://www.nature.com/articles/s41556-019-0423-1/figures/11
 ###################################################################
 
 # content of meta file: '/media/josephus/Elements/metas/meta-wt-k2-eo-5Ad-br-eo-5AD-br-GFPAD.txt' 
