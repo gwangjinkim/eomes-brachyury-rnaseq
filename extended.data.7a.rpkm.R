@@ -1,5 +1,7 @@
 #######################################################
 # Script for preparing RPKM values for Extended Data 7a
+# visible under:
+# https://www.nature.com/articles/s41556-019-0423-1/figures/14
 #######################################################
 # ./a_myRNAseq/rdownstream/190508.rpkm.heatmap181031.R
 
